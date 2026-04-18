@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>沸语 — 最简单的语言</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: linear-gradient(135deg, #4158D0 0%, #C850C0 100%);
+    --card: #fff;
+    --text: #222;
+    --sub: #666;
+    --input-bg: #fff;
+    --input-bor: #eaeaea;
+    --result-bg: #f4f7ff;
+    --rule-bg: #f9fafb;
+    --pri: #667eea;
+    --gray: #909399;
+  }
+  [dark] {
+    --bg: #1a1a2e;
+    --card: #222438;
+    --text: #eee;
+    --sub: #aaa;
+    --input-bg: #2a2c44;
+    --input-bor: #3b3d5a;
+    --result-bg: #2a2c44;
+    --rule-bg: #2a2c44;
+  }
+  body {
+    font-family: "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    animation: bgMove 18s ease infinite alternate;
+    background-size: 200% 200%;
+  }
+  @keyframes bgMove {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 100% 50%; }
+  }
+  .card {
+    background: var(--card);
+    border-radius: 24px;
+    max-width: 680px;
+    width: 100%;
+    padding: 36px 32px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+    animation: cardFade 0.8s ease forwards;
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  @keyframes cardFade { to { opacity: 1; transform: translateY(0); } }
+  .head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .title { font-size: 28px; font-weight: 700; color: var(--text); }
+  .dark-btn { background: var(--pri); color: #fff; border: none; padding: 8px 12px; border-radius: 12px; cursor: pointer; }
+  .subtitle { text-align: center; color: var(--sub); margin: 6px 0 26px; font-size: 15px; }
+  textarea {
+    width: 100%; height: 130px; border-radius: 16px; padding: 18px; font-size: 16px;
+    background: var(--input-bg); border: 1px solid var(--input-bor); color: var(--text);
+    resize: none; outline: none; transition: 0.2s;
+  }
+  .btn-row { display: flex; gap: 10px; margin: 14px 0; }
+  button {
+    flex: 1; padding: 18px; border-radius: 16px; background: var(--pri); color: white;
+    font-size: 17px; font-weight: 500; border: none; cursor: pointer; transition: 0.25s;
+  }
+  button.gray { background: var(--gray); }
+  button:hover { opacity: 0.9; transform: translateY(-2px); }
+  button:active { transform: translateY(0); }
+  .result-box {
+    background: var(--result-bg); border-radius: 16px; padding: 22px; min-height: 80px;
+    font-size: 19px; line-height: 1.6; word-break: break-all; color: var(--text);
+    position: relative;
+    white-space: pre-wrap;
+  }
+  .result-box:empty::before { content: "翻译结果将显示在这里"; color: #99a3b8; }
+  .copy-btn {
+    position: absolute; top: 12px; right: 12px; padding: 6px 10px; font-size: 12px;
+    border-radius: 8px; background: var(--pri); color: white; border: none; cursor: pointer;
+    opacity: 0; transition: 0.2s;
+  }
+  .result-box:hover .copy-btn { opacity: 1; }
+  .copy-tip { margin-top: 10px; font-size: 13px; color: #67C23A; text-align: center; opacity: 0; transition: 0.3s; }
+  .copy-tip.show { opacity: 1; }
+  .rule-box {
+    margin-top: 28px; padding: 22px; background: var(--rule-bg); border-radius: 16px;
+    font-size: 14px; color: var(--sub); line-height: 1.6;
+  }
+  .rule-box h3 { margin-bottom: 10px; font-size: 16px; color: var(--text); }
+  .footer {
+    margin-top: 30px; padding-top: 20px; border-top: 1px solid #4442;
+    text-align: center; font-size: 13px; color: var(--sub); line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="head">
+    <div class="title">沸语翻译器v1.0</div>
+    <button class="dark-btn" id="darkBtn">🌙 黑夜模式</button>
+  </div>
+  <div class="subtitle">沸语——最简单的语言</div>
+
+  <textarea id="input" placeholder="请输入汉字（现已实现全汉字翻译）"></textarea>
+  
+  <div class="btn-row">
+    <button id="convertBtn">🔥 转换为沸语</button>
+    <button id="clearBtn" class="gray">🗑️ 清空</button>
+  </div>
+
+  <div class="result-box" id="output">
+    <button class="copy-btn" id="copyBtn">📋 复制</button>
+  </div>
+  <div class="copy-tip" id="copyTip">✅ 已复制到剪贴板</div>
+
+  <div class="rule-box">
+    <h3>📘 沸语规则</h3>
+    声母：b→zhy、c→ku、d→da、f→nu、g→je、h→ght、j→shb、k→θao、l→ev、m→am、n→nən、p→pie、q→tʃie、r→rb、s→jik、t→tum、v→vɔ、w→wuda、x→xioz、y→yə、z→zu<br>
+    韵母：a→a、e→mi、i→vi、o→ʌ、u→ʒm<br>
+    声调标在最后一个韵母上
+  </div>
+
+  <div class="footer">
+    创作者：Pan Honghao<br>
+    邮箱：4397637@qq.com / 15019761949@163.com
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.18.1/dist/index.min.js"></script>
+<script>
+// ====================== 你自己的完美转换规则（完全没改） ======================
+const sheng = {
+  "b":"zhy","c":"ku","d":"da","f":"nu","g":"je","h":"ght","j":"shb","k":"θao","l":"ev","m":"am",
+  "n":"nən","p":"pie","q":"tʃie","r":"rb","s":"jik","t":"tum","v":"vɔ","w":"wuda","x":"xioz","y":"yə","z":"zu"
+};
+const yun = {
+  "a":"a","e":"mi","i":"vi","o":"ʌ","u":"ʒm"
+};
+const tone = {
+  "1":"ˉ","2":"ˊ","3":"ˇ","4":"ˋ"
+};
+
+// ====================== 你自己的原版转换逻辑（100%保留） ======================
+function convert() {
+  const text = document.getElementById("input").value.trim();
+  if (!text) return alert("请输入汉字");
+  
+  const pyList = pinyinPro.pinyin(text, {
+    type: "array", toneType: "num", multiple: false
+  });
+
+  const result = pyList.map(py => {
+    let tn = "", part = py;
+    const tm = py.match(/\d/);
+    if (tm) {
+      tn = tm[0];
+      part = py.replace(/\d/, "");
+    }
+
+    let s = "", y = part;
+    const first = part[0];
+    if (sheng[first]) {
+      s = sheng[first];
+      y = part.slice(1);
+    }
+
+    let ny = y;
+    for (const [k, v] of Object.entries(yun)) {
+      ny = ny.replaceAll(k, v);
+    }
+
+    const m = tone[tn] || "";
+    if (ny) ny = ny.slice(0, -1) + m + ny.slice(-1);
+    return s + ny;
+  });
+
+  document.getElementById("output").innerText = "结果：\n" + result.join("  ");
+}
+
+// ====================== 界面功能 ======================
+document.getElementById("convertBtn").onclick = convert;
+document.getElementById("clearBtn").onclick = () => {
+  document.getElementById("input").value = "";
+  document.getElementById("output").innerText = "";
+};
+
+// 黑夜模式
+document.getElementById("darkBtn").onclick = () => {
+  document.body.toggleAttribute("dark");
+  darkBtn.textContent = document.body.hasAttribute("dark") ? "☀️ 白天模式" : "🌙 黑夜模式";
+};
+
+// 复制功能
+document.getElementById("copyBtn").onclick = () => {
+  const txt = document.getElementById("output").innerText;
+  if(!txt) return;
+  navigator.clipboard.writeText(txt).then(()=>{
+    document.getElementById("copyTip").classList.add("show");
+    setTimeout(()=>document.getElementById("copyTip").classList.remove("show"),2000);
+  });
+};
+</script>
+</body>
+</html>
