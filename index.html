@@ -192,7 +192,7 @@
 
   <div class="btn-row">
     <button id="cnToFyBtn">🔥 汉语→沸语</button>
-    <button id="fyToCnBtn">🔄 沸语→拼音（Alpha version）</button>
+    <button id="fyToCnBtn">🔄 沸语→拼音（测试版）</button>
     <button id="copyBtn">📋 复制结果</button>
     <button id="clearBtn" class="gray">🗑️ 清空</button>
   </div>
@@ -217,7 +217,7 @@
   </div>
 
   <div class="footer">
-    目前代码行数：422     创作者：Pan Honghao<br>
+    目前代码行数：442     创作者：Pan Honghao<br>
     邮箱：4397637@qq.com / arenabreakout667@163.com
   </div>
 </div>
@@ -232,12 +232,16 @@ const sheng = {
 const yun = {"a":"a","e":"mi","i":"vi","o":"ʌ","u":"ʒm"};
 const tone = {"1":"ˉ","2":"ˊ","3":"ˇ","4":"ˋ"};
 
-// ====================== 反向规则（完全保留） ======================
-const shengReverse = Object.fromEntries(Object.entries(sheng).map(([k, v]) => [v, k]));
-const yunReverse = Object.fromEntries(Object.entries(yun).map(([k, v]) => [v, k]));
-const toneReverse = Object.fromEntries(Object.entries(tone).map(([k, v]) => [v, k]));
-const shengKeysReverse = Object.keys(shengReverse).sort((a, b) => b.length - a.length);
-const yunKeysReverse = Object.keys(yunReverse).sort((a, b) => b.length - a.length);
+// ====================== 反向规则（精准映射：沸语→标准拼音） ======================
+// 声母反向映射（沸语→标准拼音声母）
+const shengReverse = {
+  "zhy":"b","ku":"c","da":"d","nu":"f","je":"g","ght":"h","shb":"j","θao":"k","ev":"l","am":"m",
+  "nən":"n","pie":"p","tʃie":"q","rb":"r","jik":"s","tum":"t","vɔ":"v","wuda":"w","xioz":"x","yə":"y","zu":"z"
+};
+// 韵母反向映射（沸语→标准拼音韵母）
+const yunReverse = {"a":"a","mi":"e","vi":"i","ʌ":"o","ʒm":"u"};
+// 声调反向映射（符号→数字）
+const toneReverse = {"ˉ":"1","ˊ":"2","ˇ":"3","ˋ":"4"};
 
 // ====================== 汉语转沸语（完全保留） ======================
 function cnToFy() {
@@ -270,7 +274,7 @@ function cnToFy() {
   saveToLocal();
 }
 
-// ====================== 沸语转拼音（完全保留） ======================
+// ====================== 沸语转拼音（核心重构：精准输出标准拼音） ======================
 function fyToCn() {
   const text = document.getElementById("input").value.trim();
   if (!text) { 
@@ -280,48 +284,65 @@ function fyToCn() {
     return; 
   }
 
-  const fyParts = text.split(/\s+/).filter(item => item);
-  const resultParts = [];
+  // 步骤1：预处理输入（移除无关符号，按空格拆分沸语单元）
+  const cleanText = text.replace(/[^\u0000-\u007F\u0250-\u02AFˉˊˇˋ\s]/g, "").trim();
+  const fyUnits = cleanText.split(/\s+/).filter(unit => unit); // 拆分每个沸语音节
+  const pinyinResult = [];
 
-  fyParts.forEach(fy => {
-    let currentFy = fy;
+  // 步骤2：逐个解析沸语音节→标准拼音
+  fyUnits.forEach(unit => {
+    let fyUnit = unit;
     let toneNum = "";
 
-    for (const [num, mark] of Object.entries(tone)) {
-      if (currentFy.includes(mark)) {
+    // 2.1 提取声调（从沸语中识别声调符号→转换为数字）
+    for (const [toneMark, num] of Object.entries(toneReverse)) {
+      if (fyUnit.includes(toneMark)) {
         toneNum = num;
-        currentFy = currentFy.replace(mark, "");
+        fyUnit = fyUnit.replace(toneMark, ""); // 移除声调符号，只留声母+韵母
         break;
       }
     }
 
+    // 2.2 匹配声母（优先长声母，避免拆分错误）
     let shengmu = "";
-    let remainStr = currentFy;
-    for (const key of shengKeysReverse) {
-      if (currentFy.startsWith(key)) {
-        shengmu = shengReverse[key];
-        remainStr = currentFy.slice(key.length);
+    let remainYunmu = fyUnit;
+    // 按声母长度从长到短排序，确保优先匹配长声母（如 tʃie 而非 t）
+    const sortedShengKeys = Object.keys(shengReverse).sort((a, b) => b.length - a.length);
+    for (const shengKey of sortedShengKeys) {
+      if (fyUnit.startsWith(shengKey)) {
+        shengmu = shengReverse[shengKey]; // 映射为标准拼音声母
+        remainYunmu = fyUnit.slice(shengKey.length); // 剩余部分为韵母
         break;
       }
     }
 
-    let yunmu = remainStr;
-    for (const key of yunKeysReverse) {
-      if (yunmu.includes(key)) {
-        yunmu = yunmu.replaceAll(key, yunReverse[key]);
+    // 2.3 匹配韵母（逐字符替换为标准拼音韵母）
+    let yunmu = "";
+    if (remainYunmu) {
+      yunmu = remainYunmu;
+      // 替换所有沸语韵母为标准拼音韵母
+      for (const [fyYun, pyYun] of Object.entries(yunReverse)) {
+        yunmu = yunmu.replace(fyYun, pyYun);
       }
+      // 清理韵母中的无效字符
+      yunmu = yunmu.replace(/[^aoeiu]/g, "");
     }
 
-    let finalPinyin = shengmu + yunmu;
-    if (toneNum) finalPinyin += toneNum;
-    
-    resultParts.push(finalPinyin || fy);
+    // 2.4 拼接标准拼音（声母+韵母+声调数字）
+    let standardPinyin = shengmu + yunmu;
+    if (toneNum && standardPinyin) {
+      standardPinyin += toneNum;
+    }
+
+    // 容错：无匹配时保留原沸语单元
+    pinyinResult.push(standardPinyin || unit);
   });
 
-  const result = "拼音结果：" + resultParts.join(" ");
-  document.getElementById("output").innerText = result;
+  // 步骤3：输出标准拼音结果
+  const finalResult = "拼音结果：" + pinyinResult.filter(Boolean).join(" ");
+  document.getElementById("output").innerText = finalResult;
   updateWordCount(text.length);
-  addToHistory(text, result, "fyToCn");
+  addToHistory(text, finalResult, "fyToCn");
   saveToLocal();
 }
 
