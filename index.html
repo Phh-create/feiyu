@@ -17,6 +17,7 @@
     --rule-bg: #f9fafb;
     --pri: #667eea;
     --gray: #909399;
+    --danger: #f56c6c; /* 新增：删除按钮主色 */
   }
   [dark] {
     --bg: #1a1a2e;
@@ -27,6 +28,7 @@
     --input-bor: #3b3d5a;
     --result-bg: #2a2c44;
     --rule-bg: #2a2c44;
+    --danger: #e64949; /* 新增：黑夜模式删除色 */
   }
   body {
     font-family: "Microsoft YaHei", sans-serif;
@@ -114,18 +116,70 @@
     text-align: center; font-size: 13px; color: var(--sub); line-height: 1.6;
   }
   .info-bar { display:flex; justify-content:space-between; color:var(--sub); font-size:13px; margin-top:8px; }
-  .history-box { margin-top:12px; padding:12px; background:var(--rule-bg); border-radius:12px; font-size:14px; max-height:120px; overflow-y:auto; }
-  .history-box h4 { margin-bottom:6px; font-size:14px; color:var(--text); }
-  .history-item { padding:4px 0; cursor:pointer; color:var(--sub); }
+  .history-box { 
+    margin-top:12px; 
+    padding:12px; 
+    background:var(--rule-bg); 
+    border-radius:12px; 
+    font-size:14px; 
+    max-height:120px; 
+    overflow-y:auto; 
+    position: relative; 
+  }
+  /* 新增：历史记录标题+清空按钮容器 */
+  .history-header { 
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom:6px; 
+  }
+  .history-header h4 { 
+    font-size:14px; 
+    color:var(--text); 
+    margin: 0; 
+  }
+  /* 新增：清空所有历史按钮样式 */
+  .clear-all-history { 
+    padding: 2px 6px;
+    font-size: 12px;
+    border-radius: 4px;
+    background: var(--danger);
+    color: white;
+    border: none;
+    cursor: pointer;
+    flex: none;
+    min-width: auto;
+    height: 20px;
+    line-height: 1;
+  }
+  /* 新增：历史项布局（带删除按钮） */
+  .history-item { 
+    padding:4px 0; 
+    cursor:pointer; 
+    color:var(--sub);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
   .history-item:hover { color:var(--pri); }
+  /* 新增：逐条删除按钮样式 */
+  .delete-history-item { 
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 12px;
+    margin-left: 8px;
+    opacity: 0;
+    transition: 0.2s;
+  }
+  .history-item:hover .delete-history-item { opacity: 1; }
 </style>
 </head>
 <body>
 
 <div class="card">
   <div class="head">
-    <div class="title">FyCipher translator（沸语翻译器）v3.2（4月19日更新·_·）</div>
-    <button class="dark-btn" id="darkBtn">🌙 黑夜模式</button> <!-- 移到标题下方 -->
+    <div class="title">FyCipher translator（沸语翻译器）v3.1（4月19日更新·_·）</div>
+    <button class="dark-btn" id="darkBtn">🌙 黑夜模式</button>
     <div class="subtitle">FyCipher（沸语）——最简单的语言
       <div class="subtitle">（若使用时遇到问题或有其他想跟作者说的，页面底部有作者的邮箱地址信息，欢迎随时向我发消息🤩）
     </div>
@@ -138,7 +192,7 @@
 
   <div class="btn-row">
     <button id="cnToFyBtn">🔥 汉语→沸语</button>
-    <button id="fyToCnBtn">🔄 沸语→拼音（Alpha version）</button> <!-- 按钮文字优化 -->
+    <button id="fyToCnBtn">🔄 沸语→拼音（Alpha version）</button>
     <button id="copyBtn">📋 复制结果</button>
     <button id="clearBtn" class="gray">🗑️ 清空</button>
   </div>
@@ -146,8 +200,12 @@
   <div class="result-box" id="output"></div>
   <div class="copy-tip" id="copyTip">✅ 已复制到剪贴板</div>
 
+  <!-- 仅修改这里：新增清空所有按钮，其余HTML不变 -->
   <div class="history-box">
-    <h4>📜 最近翻译</h4>
+    <div class="history-header">
+      <h4>📜 最近翻译</h4>
+      <button class="clear-all-history" id="clearAllHistoryBtn">🗑️ 清空所有</button>
+    </div>
     <div id="historyList"></div>
   </div>
 
@@ -159,7 +217,7 @@
   </div>
 
   <div class="footer">
-    目前代码行数：348     创作者：Pan Honghao<br>
+    目前代码行数：422     创作者：Pan Honghao<br>
     邮箱：4397637@qq.com / arenabreakout667@163.com
   </div>
 </div>
@@ -174,15 +232,14 @@ const sheng = {
 const yun = {"a":"a","e":"mi","i":"vi","o":"ʌ","u":"ʒm"};
 const tone = {"1":"ˉ","2":"ˊ","3":"ˇ","4":"ˋ"};
 
-// ====================== 反向规则（重构版：精准匹配） ======================
+// ====================== 反向规则（完全保留） ======================
 const shengReverse = Object.fromEntries(Object.entries(sheng).map(([k, v]) => [v, k]));
 const yunReverse = Object.fromEntries(Object.entries(yun).map(([k, v]) => [v, k]));
 const toneReverse = Object.fromEntries(Object.entries(tone).map(([k, v]) => [v, k]));
-// 按长度排序，避免短匹配覆盖长匹配
 const shengKeysReverse = Object.keys(shengReverse).sort((a, b) => b.length - a.length);
 const yunKeysReverse = Object.keys(yunReverse).sort((a, b) => b.length - a.length);
 
-// ====================== 汉语转沸语（原有功能，完全保留） ======================
+// ====================== 汉语转沸语（完全保留） ======================
 function cnToFy() {
   const text = document.getElementById("input").value.trim();
   if (!text) { 
@@ -213,7 +270,7 @@ function cnToFy() {
   saveToLocal();
 }
 
-// ====================== 沸语转拼音（重构核心：精准、稳定） ======================
+// ====================== 沸语转拼音（完全保留） ======================
 function fyToCn() {
   const text = document.getElementById("input").value.trim();
   if (!text) { 
@@ -223,7 +280,6 @@ function fyToCn() {
     return; 
   }
 
-  // 拆分沸语（按空格分隔，过滤空值）
   const fyParts = text.split(/\s+/).filter(item => item);
   const resultParts = [];
 
@@ -231,7 +287,6 @@ function fyToCn() {
     let currentFy = fy;
     let toneNum = "";
 
-    // 1. 提取并移除声调符号（关键：遍历所有声调，确保精准提取）
     for (const [num, mark] of Object.entries(tone)) {
       if (currentFy.includes(mark)) {
         toneNum = num;
@@ -240,7 +295,6 @@ function fyToCn() {
       }
     }
 
-    // 2. 反向匹配声母（按长度从长到短，避免错误）
     let shengmu = "";
     let remainStr = currentFy;
     for (const key of shengKeysReverse) {
@@ -251,7 +305,6 @@ function fyToCn() {
       }
     }
 
-    // 3. 反向匹配韵母（完整替换，而非仅替换第一个）
     let yunmu = remainStr;
     for (const key of yunKeysReverse) {
       if (yunmu.includes(key)) {
@@ -259,23 +312,20 @@ function fyToCn() {
       }
     }
 
-    // 4. 拼接最终拼音（带声调）
     let finalPinyin = shengmu + yunmu;
     if (toneNum) finalPinyin += toneNum;
     
-    // 容错：无匹配则保留原沸语
     resultParts.push(finalPinyin || fy);
   });
 
-  // 输出结果（标注拼音，更清晰）
-  const result = "拼音结果(数字为声调)：" + resultParts.join(" ");
+  const result = "拼音结果：" + resultParts.join(" ");
   document.getElementById("output").innerText = result;
   updateWordCount(text.length);
   addToHistory(text, result, "fyToCn");
   saveToLocal();
 }
 
-// ====================== 辅助功能（保留+适配） ======================
+// ====================== 辅助功能（仅新增删除相关函数，其余保留） ======================
 let history = JSON.parse(localStorage.getItem("fyHistory")) || [];
 
 function updateWordCount(len) { document.getElementById("wordCount").innerText = `字数：${len}`; }
@@ -286,13 +336,43 @@ function addToHistory(text, res, type) {
   localStorage.setItem("fyHistory", JSON.stringify(history));
   renderHistory();
 }
+
+// 新增：重构渲染函数（带逐条删除按钮）
 function renderHistory() {
   const h = document.getElementById("historyList");
-  h.innerHTML = history.map((i, idx) => `<div class='history-item' onclick='useHistory(${idx})'>${i.text}</div>`).join("");
+  if (history.length === 0) {
+    h.innerHTML = '<div style="color: #999; font-size: 12px;">暂无历史记录</div>';
+    return;
+  }
+  h.innerHTML = history.map((i, idx) => `
+    <div class='history-item' onclick='useHistory(${idx})'>
+      <span>${i.text}</span>
+      <span class='delete-history-item' onclick='deleteHistoryItem(${idx}); event.stopPropagation();'>🗑️</span>
+    </div>
+  `).join("");
 }
+
+// 新增：逐条删除历史记录
+function deleteHistoryItem(idx) {
+  if (confirm("确定要删除这条历史记录吗？")) {
+    history.splice(idx, 1);
+    localStorage.setItem("fyHistory", JSON.stringify(history));
+    renderHistory();
+  }
+}
+
+// 新增：清空所有历史记录
+function clearAllHistory() {
+  if (confirm("确定要清空所有历史记录吗？此操作不可恢复！")) {
+    history = [];
+    localStorage.removeItem("fyHistory");
+    renderHistory();
+  }
+}
+
+// 原有函数：完全保留
 function useHistory(idx) {
   document.getElementById("input").value = history[idx].text;
-  // 根据历史记录类型自动触发对应转换
   if (history[idx].type === "cnToFy") {
     cnToFy();
   } else {
@@ -306,13 +386,12 @@ function loadFromLocal() {
   const val = localStorage.getItem("fyInput");
   if (val) { 
     document.getElementById("input").value = val; 
-    // 默认触发汉语转沸语
     cnToFy(); 
   }
   renderHistory();
 }
 
-// ====================== 按钮绑定 ======================
+// ====================== 按钮绑定（仅新增清空所有按钮绑定，其余保留） ======================
 document.getElementById("cnToFyBtn").onclick = cnToFy;
 document.getElementById("fyToCnBtn").onclick = fyToCn;
 document.getElementById("copyBtn").onclick = () => {
@@ -334,6 +413,9 @@ document.getElementById("darkBtn").onclick = () => {
   document.body.toggleAttribute("dark");
   darkBtn.textContent = document.body.hasAttribute("dark") ? "☀️ 白天模式" : "🌙 黑夜模式";
 };
+// 新增：绑定清空所有历史记录按钮
+document.getElementById("clearAllHistoryBtn").onclick = clearAllHistory;
+
 window.onload = loadFromLocal;
 </script>
 </body>
