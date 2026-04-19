@@ -138,7 +138,7 @@
 
   <div class="btn-row">
     <button id="cnToFyBtn">🔥 汉语→沸语</button>
-    <button id="fyToCnBtn">🔄 沸语→汉语</button> <!-- 新增沸语转汉语按钮 -->
+    <button id="fyToCnBtn">🔄 沸语→拼音（精准版）</button> <!-- 按钮文字优化 -->
     <button id="copyBtn">📋 复制结果</button>
     <button id="clearBtn" class="gray">🗑️ 清空</button>
   </div>
@@ -174,12 +174,15 @@ const sheng = {
 const yun = {"a":"a","e":"mi","i":"vi","o":"ʌ","u":"ʒm"};
 const tone = {"1":"ˉ","2":"ˊ","3":"ˇ","4":"ˋ"};
 
-// ====================== 反向规则（新增：沸语转汉语） ======================
+// ====================== 反向规则（重构版：精准匹配） ======================
 const shengReverse = Object.fromEntries(Object.entries(sheng).map(([k, v]) => [v, k]));
 const yunReverse = Object.fromEntries(Object.entries(yun).map(([k, v]) => [v, k]));
 const toneReverse = Object.fromEntries(Object.entries(tone).map(([k, v]) => [v, k]));
+// 按长度排序，避免短匹配覆盖长匹配
+const shengKeysReverse = Object.keys(shengReverse).sort((a, b) => b.length - a.length);
+const yunKeysReverse = Object.keys(yunReverse).sort((a, b) => b.length - a.length);
 
-// ====================== 汉语转沸语（原有功能） ======================
+// ====================== 汉语转沸语（原有功能，完全保留） ======================
 function cnToFy() {
   const text = document.getElementById("input").value.trim();
   if (!text) { 
@@ -210,7 +213,7 @@ function cnToFy() {
   saveToLocal();
 }
 
-// ====================== 沸语转汉语（新增核心功能） ======================
+// ====================== 沸语转拼音（重构核心：精准、稳定） ======================
 function fyToCn() {
   const text = document.getElementById("input").value.trim();
   if (!text) { 
@@ -220,55 +223,52 @@ function fyToCn() {
     return; 
   }
 
-  // 拆分沸语（按空格分隔）
-  const fyParts = text.split(/\s+/);
+  // 拆分沸语（按空格分隔，过滤空值）
+  const fyParts = text.split(/\s+/).filter(item => item);
   const resultParts = [];
 
   fyParts.forEach(fy => {
-    // 提取声调
-    let toneMark = "";
-    let fyNoTone = fy;
+    let currentFy = fy;
+    let toneNum = "";
+
+    // 1. 提取并移除声调符号（关键：遍历所有声调，确保精准提取）
     for (const [num, mark] of Object.entries(tone)) {
-      if (fy.includes(mark)) {
-        toneMark = mark;
-        fyNoTone = fy.replace(mark, "");
+      if (currentFy.includes(mark)) {
+        toneNum = num;
+        currentFy = currentFy.replace(mark, "");
         break;
       }
     }
-    const toneNum = toneReverse[toneMark] || "";
 
-    // 匹配声母（反向查找）
+    // 2. 反向匹配声母（按长度从长到短，避免错误）
     let shengmu = "";
-    let yunmuPart = fyNoTone;
-    // 按声母长度从长到短匹配（避免短匹配覆盖长匹配）
-    const shengKeys = Object.keys(shengReverse).sort((a, b) => b.length - a.length);
-    for (const key of shengKeys) {
-      if (fyNoTone.startsWith(key)) {
+    let remainStr = currentFy;
+    for (const key of shengKeysReverse) {
+      if (currentFy.startsWith(key)) {
         shengmu = shengReverse[key];
-        yunmuPart = fyNoTone.slice(key.length);
+        remainStr = currentFy.slice(key.length);
         break;
       }
     }
 
-    // 匹配韵母（反向查找）
-    let yunmu = "";
-    const yunKeys = Object.keys(yunReverse).sort((a, b) => b.length - a.length);
-    for (const key of yunKeys) {
-      if (yunmuPart.includes(key)) {
-        yunmu = yunmuPart.replace(key, yunReverse[key]);
-        break;
+    // 3. 反向匹配韵母（完整替换，而非仅替换第一个）
+    let yunmu = remainStr;
+    for (const key of yunKeysReverse) {
+      if (yunmu.includes(key)) {
+        yunmu = yunmu.replaceAll(key, yunReverse[key]);
       }
     }
-    if (!yunmu) yunmu = yunmuPart; // 无匹配韵母则保留原字符
 
-    // 拼接拼音（带声调）
-    const pinyin = shengmu + yunmu + toneNum;
-    // 拼音转汉字（取第一个匹配结果）
-    const hanzi = pinyinPro.hanzi(pinyin, { multiple: false }) || fy;
-    resultParts.push(hanzi);
+    // 4. 拼接最终拼音（带声调）
+    let finalPinyin = shengmu + yunmu;
+    if (toneNum) finalPinyin += toneNum;
+    
+    // 容错：无匹配则保留原沸语
+    resultParts.push(finalPinyin || fy);
   });
 
-  const result = resultParts.join("");
+  // 输出结果（标注拼音，更清晰）
+  const result = "拼音结果(数字为声调)：" + resultParts.join(" ");
   document.getElementById("output").innerText = result;
   updateWordCount(text.length);
   addToHistory(text, result, "fyToCn");
@@ -312,12 +312,9 @@ function loadFromLocal() {
   renderHistory();
 }
 
-// ====================== 按钮绑定（新增沸语转汉语） ======================
-// 汉语转沸语
+// ====================== 按钮绑定 ======================
 document.getElementById("cnToFyBtn").onclick = cnToFy;
-// 沸语转汉语（新增）
 document.getElementById("fyToCnBtn").onclick = fyToCn;
-// 复制
 document.getElementById("copyBtn").onclick = () => {
   const t = document.getElementById("output").innerText;
   if(!t)return;
@@ -327,19 +324,16 @@ document.getElementById("copyBtn").onclick = () => {
     setTimeout(()=>tip.classList.remove("show"),2000);
   });
 };
-// 清空
 document.getElementById("clearBtn").onclick = () => {
   document.getElementById("input").value = "";
   document.getElementById("output").innerText = "";
   updateWordCount(0);
   saveToLocal();
 };
-// 黑夜模式
 document.getElementById("darkBtn").onclick = () => {
   document.body.toggleAttribute("dark");
   darkBtn.textContent = document.body.hasAttribute("dark") ? "☀️ 白天模式" : "🌙 黑夜模式";
 };
-// 加载本地保存
 window.onload = loadFromLocal;
 </script>
 </body>
