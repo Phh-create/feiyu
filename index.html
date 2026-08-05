@@ -98,7 +98,7 @@
     position: relative;
     white-space: pre-wrap;
   }
-  .result-box:empty::before { content: "翻译结果将显示在这里:)"; color: #99a3b8; }
+  .result-box:empty::before { content: "翻译结果将显示在这里🙃:)"; color: #99a3b8; }
   .copy-btn {
     position: absolute; top: 12px; right: 12px; padding: 6px 10px; font-size: 12px;
     border-radius: 8px; background: var(--pri); color: white; border: none; cursor: pointer;
@@ -189,16 +189,16 @@
     <button id="cnToFyBtn">🔥 汉语→沸语</button>
     <button id="fyToCnBtn">🔄 沸语→拼音</button>
     <button id="copyBtn">📋 复制结果</button>
-    <button id="clearBtn" class="gray">🗑️ 清空</button>
+    <button id="clearBtn" class="gray">🗑️ 清空😥</button>
   </div>
   <div class="result-box" id="output">
     <button class="copy-btn" id="copyBtn">📋 复制</button>
   </div>
-  <div class="copy-tip" id="copyTip">✅ 已复制到剪贴板</div>
+  <div class="copy-tip" id="copyTip">✅ 已复制到剪贴板:)</div>
   <div class="history-box">
     <div class="history-header">
-      <h4>📜 最近翻译</h4>
-      <button class="clear-all-history" id="clearAllHistoryBtn">🗑️ 清空所有</button>
+      <h4>📜 最近翻译🤓👇</h4>
+      <button class="clear-all-history" id="clearAllHistoryBtn">🗑️ 清空所有😭</button>
     </div>
     <div id="historyList"></div>
   </div>
@@ -438,14 +438,14 @@ function renderHistory() {
   `).join("");
 }
 function deleteHistoryItem(idx) {
-  if (confirm("确定删除本条记录？")) {
+  if (confirm("确定删除本条记录😫？")) {
     history.splice(idx,1);
     try{ localStorage.setItem("fyHistory", JSON.stringify(history)); }catch(e){}
     renderHistory();
   }
 }
 function clearAllHistory() {
-  if (confirm("确定清空全部历史？不可恢复！")) {
+  if (confirm("确定清空全部历史？不可恢复😱！")) {
     history = [];
     try{ localStorage.removeItem("fyHistory"); }catch(e){}
     renderHistory();
