@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<script src="https://cdn.jsdelivr.net/npm/pinyin-pro@3.18.1/dist/index.js"></script>
+<style>
+html,body{
+  margin:0;
+  padding:0;
+  min-height:100vh;
+}
+.help-btn-box{
+  display:flex;
+  flex-shrink:0;
+}
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: linear-gradient(135deg, #4158D0 0%, #C850C0 100%);
+    --bg-warm: linear-gradient(135deg, #ff7e5f 0%, #feb47b 100%);
+    --bg-green: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+    --bg-gray: linear-gradient(135deg, #606c88 0%, #3f4c6b 100%);
+    --card: #fff;
+    --text: #222;
+    --sub: #666;
+    --input-bg: #fff;
+    --input-bor: #eaeaea;
+    --result-bg: #f4f7ff;
+    --rule-bg: #f9fafb;
+    --pri: #667eea;
+    --gray: #909399;
+    --danger: #f56c6c;
+    --transition-all: all 0.35s cubic-bezier(0.25,0.8,0.25,1);
+  }
+  [dark] {
+    --bg: #1a1a2e;
+    --card: #222438;
+    --text: #eee;
+    --sub: #aaa;
+    --input-bg: #2a2c44;
+    --input-bor: #3b3d5a;
+    --result-bg: #2a2c44;
+    --rule-bg: #2a2c44;
+    --danger: #e64949;
+  }
+  body {
+    background: var(--bg);
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    background-size: 220% 220%;
+    transition: var(--transition-all);
+  }
+  @keyframes cardFade {
+    from { opacity: 0; transform: translateY(40px) scale(0.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes titleShine {
+    0 { background-position: -200% center; }
+    100 { background-position: 200% center; }
+  }
+  @keyframes resultFade {
+    from { opacity: 0; transform: scale(0.97); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.85); }
+    to { opacity: 1; transform: scale(1); }
+  }
+  .card {
+    background: var(--card);
+    border-radius: 28px;
+    max-width: 700px;
+    width: 100%;
+    padding: 38px 34px;
+    box-shadow: 0 24px 70px rgba(0,0,0,0.18);
+    animation: cardFade 1s ease forwards;
+    opacity: 0;
+    transform: translateY(40px) scale(0.96);
+    transition: var(--transition-all);
+  }
+  .head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+  .title-main {
+    font-size: 30px;
+    font-weight: 700;
+    color: transparent;
+    background: linear-gradient(90deg, #667eea, #c850c0, #667eea);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    animation: titleShine 4.5s linear infinite;
+  }
+  .title-sub {
+    font-size: 22px;
+    color: var(--sub);
+  }
+  .btn-group-top {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-bottom: 8px;
+  }
+  .top-btn {
+    background: var(--pri);
+    color: #fff;
+    border: none;
+    padding: 9px 14px;
+    border-radius: 14px;
+    cursor: pointer;
+    transition: var(--transition-all);
+    font-size: 14px;
+  }
+  .top-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.3);
+  }
+  .subtitle { text-align: center; color: var(--sub); margin: 8px 0 28px; font-size: 15px; line-height: 1.5; }
+  textarea {
+    width: 100%; height: 140px; border-radius: 18px; padding: 20px; font-size: 16px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-bor);
+    color: var(--text);
+    resize: none; outline: none;
+    transition: var(--transition-all);
+  }
+  textarea:focus {
+    border-color: var(--pri);
+  }
+  .btn-row { display: flex; gap: 12px; margin: 16px 0; flex-wrap:wrap; }
+  button {
+    flex:1; min-width:122px; padding: 20px; border-radius: 18px; background: var(--pri); color: white;
+    font-size: 17px; font-weight: 500; border: none; cursor: pointer;
+    transition: var(--transition-all);
+  }
+  button:hover {
+    opacity: 0.92;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(102, 126, 234, 0.28);
+  }
+  button:active { transform: translateY(0); scale: 0.97; }
+  button.gray { background: var(--gray); }
+  .result-box {
+    background: var(--result-bg); border-radius: 18px; padding: 24px; min-height: 90px;
+    font-size: 19px; line-height: 1.65; word-break: break-all; color: var(--text);
+    position: relative;
+    white-space: pre-wrap;
+    transition: var(--transition-all);
+  }
+  .result-box.active {
+    animation: resultFade 0.6s ease;
+  }
+  .result-box:empty::before { content: "翻译结果将显示在这里🙃:)"; color: #99a3b8; }
+  .rule-box {
+    margin-top:30px; padding:24px; background:var(--rule-bg); border-radius:18px;
+    font-size:14px; color:var(--sub); line-height:1.65;
+    transition: var(--transition-all);
+  }
+  .rule-box h3 { margin-bottom:10px; font-size:16px; color:var(--text); }
+  .footer {
+    margin-top:32px; padding-top:22px; border-top:1px solid rgba(68,68,68,0.2);
+    text-align:center; font-size:13px; color:var(--sub); line-height:1.6;
+  }
+  .info-bar { display:flex; justify-content:space-between; color:var(--sub); font-size:13px; margin-top:10px; }
+  .history-box {
+    margin-top:14px; padding:14px; background:var(--rule-bg); border-radius:14px;
+    font-size:14px; max-height:130px; overflow-y:auto; position:relative;
+    transition: var(--transition-all);
+  }
+  .history-header {
+    display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;
+  }
+  .history-header h4 { font-size:14px; color:var(--text); margin:0; }
+  .clear-all-history {
+    padding:3px 7px; font-size:12px; border-radius:6px; background:var(--danger); color:white; border:none; cursor:pointer; flex:none; min-width:auto; height:22px; line-height:1; transition:0.2s;
+  }
+  .history-item {
+    padding:5px 0; cursor:pointer; color:var(--sub); display:flex; justify-content:space-between; align-items:center; transition:0.2s;
+  }
+  .history-item:hover { color:var(--pri); transform: translateX(4px); }
+  .delete-history-item {
+    color:var(--danger); cursor:pointer; font-size:12px; margin-left:10px; opacity:0; transition:0.2s;
+  }
+  .history-item:hover .delete-history-item { opacity:1; }
+  /* 弹窗最高层级，不会被卡片遮挡 */
+  .mask {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.65); z-index: 9999; display: flex; align-items: center; justify-content: center; padding:20px;
+  }
+  .notice-modal {
+    background: var(--card); border-radius: 24px; max-width: 520px; width: 100%; padding:30px; animation: popIn 0.4s ease;
+  }
+  .notice-title {
+    font-size: 22px; font-weight: bold; color: var(--text); margin-bottom:14px; text-align:center;
+  }
+  .notice-content {
+    font-size:15px; color:var(--sub); line-height:1.7; margin-bottom:22px;
+  }
+  .notice-close {
+    width: 100%; padding:14px; border-radius:14px; border:none; background:var(--pri); color:white; font-size:16px; cursor:pointer; transition:0.2s;
+  }
+  .notice-close:hover { opacity:0.9; transform: translateY(-2px); }
+  .hidden { display: none !important; }
+.copy-tip {
+  margin-top: 12px;
+  font-size:13px;
+  color:#67C23A;
+  text-align:center;
+  opacity:0;
+  transition:0.35s;
+}
+.copy-tip.show {
+  opacity:1;
+}
+.title-wrap{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    position:relative;
+    flex-wrap:nowrap;
+}
+.help-btn-box{
+    position:relative;
+}
+/* 信息按钮强制正圆 */
+#helpBtn{
+    width:36px;
+    height:36px;
+    border-radius:50%;
+    border:none;
+    background:#407bff;
+    color:white;
+    font-size:18px;
+    cursor:pointer;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:0.25s;
+}
+#helpBtn:hover{
+    background:#2b64dd;
+    transform:translateY(-2px);
+}
+/*右上角小红点*/
+.red-dot{
+    position:absolute;
+    top:-2px;
+    right:-2px;
+    width:8px;
+    height:8px;
+    background:#f5222d;
+    border-radius:50%;
+    display:none;
+}
+.red-dot.show{
+    display:block;
+}
+/*首次引导提示文字*/
+.intro-guide-tip{
+    position:absolute;
+    top:40px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#333;
+    color:white;
+    padding:6px 12px;
+    border-radius:8px;
+    font-size:13px;
+    white-space:nowrap;
+    display:none;
+    z-index:100;
+}
+.intro-guide-tip.show{
+    display:block;
+}
+</style>
+</head>
+<body>
+<div class="mask hidden" id="noticeMask">
+  <div class="notice-modal">
+    <div class="notice-title">📢 v4.6网站更新公告（8月6日更新）  优化版本</div>
+    <div class="notice-content">
+      1. 移除持续循环背景动画，大幅解决手机卡顿问题<br>
+      2. 新增介绍功能（仅版本更新弹出提醒）<br>
+      3. 修复已知问题<br>
+<br> 
+        （本次公告仅首次打开弹出，关闭后不再显示🤐！）
+    </div>
+    <button class="notice-close" id="closeNotice">我知道了，开始使用😍</button>
+  </div>
+</div>
+<div class="card">
+  <div class="head">
+    <div class="title-main">沸语翻译工具（FyCipher translator）</div>
+<div class="title-wrap">
+    <h1>v4.6 优化版</h1>
+    <!--帮助问号按钮+红点角标-->
+    <div class="help-btn-box">
+        <button id="helpBtn" class="help-btn" style="width:36px;height:36px;border-radius:50%;border:none;background:#407bff;color:white;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;">ⓘ</button>
+        <span id="helpRedDot" class="red-dot"></span>
+    </div>
+    <!--首次进入的引导提示文字-->
+    <div id="introGuideTip" class="intro-guide-tip">👆点击ⓘ查看网站介绍</div>
+</div>
+    <div class="btn-group-top">
+      <button class="top-btn" id="darkBtn">🌙 黑夜/日间切换</button>
+      <button class="top-btn" id="bgSwitchBtn">🎨 切换背景</button>
+    </div>
+    <div class="subtitle">沸语（FyCipher）——最简单的语言🤔
+      <div>有问题可联系作者页面底部邮箱🤩</div>
+    </div>
+  </div>
+  <textarea id="input" placeholder="在此输入中文或沸语（FyCipher）😋"></textarea>
+  <div class="info-bar">
+    <div id="wordCount"> 字数：0</div>
+  </div>
+  <div class="btn-row">
+    <button id="cnToFyBtn">🔥 汉语→沸语</button>
+    <button id="fyToCnBtn">🔄 沸语→拼音</button>
+    <button id="copyBtn">📋 复制结果</button>
+    <button id="clearBtn" class="gray">🗑️ 清空😥</button>
+  </div>
+  <div class="result-box" id="output">
+  </div>
+  <div class="copy-tip" id="copyTip">✅ 已复制到剪贴板:)</div>
+  <div class="history-box">
+    <div class="history-header">
+      <h4>📜 最近翻译🤓👇</h4>
+      <button class="clear-all-history" id="clearAllHistoryBtn">🗑️ 清空所有😭</button>
+    </div>
+    <div id="historyList"></div>
+  </div>
+  <div class="rule-box">
+    <h3>📘 沸语（FyCipher）完整规则</h3>
+    声母映射：b→zhy、c→ku、ch→kught、d→da、f→nu、g→je、h→ght、j→shb、k→θao、l→ev、m→am、n→nən、p→pie、q→tʃie、r→rb、s→jik、sh→jikght、t→tum、v→vɔ、w→wuda、x→xioz、y→yə、z→zu、zh→zught<br>
+    基础韵母：a→a、e→mi、i→vi、o→ʌ、u→ʒm；g→je；复韵母直接拆分元音拼接（ai=a+vi=avi）<br>
+    音节结尾为g/n/a/o/e/i/u/ü时，声调放置在**音节最后一个音素的沸译文前方**；所有字母n统一译为nən；四声符号使用丶
+  </div>
+  <div class="footer">
+    创作者：夙舊（Q：3231153723）<br>
+    邮箱：3231153723@qq.com / arenabreakout667@163.com
+  </div>
+</div>
+<!--弹窗移至card外部，body直接子元素，fixed全屏生效 -->
+<div id="introModal" style="position:fixed;inset:0;width:100vw;height:100vh;background:rgba(0,0,0,0.55) !important;z-index:99999;display:none;align-items:center;justify-content:center;">
+    <div id="introModalContent" style="background:#ffffff;width:90%;max-width:460px;max-height:85vh;overflow-y:auto;padding:24px;border-radius:14px;position:relative;">
+        <span id="introCloseBtn" style="position:absolute;top:12px;right:16px;font-size:22px;cursor:pointer;color:#666;user-select:none;">×</span>
+        <h3>沸语FyCipher介绍</h3>
+        <div style="line-height:1.7;">
+          沸语(FyCipher)是一款简易自定义加密语言工具，适合向别人委婉地袒露自己想对其说的秘密😄
+          <br><br>
+            1. 核心用途<br>
+               平时私聊、发动态不想别人看懂原文，把中文转成沸语发出去，只有知道这套转换规则的人才能还原成正常拼音 / 汉字，路人看不懂乱码一样的文字
+          <br><br>
+            2. 使用方式<br>
+               两种一键转换：汉语→沸语(FyCipher)（加密）、沸语(FyCipher)→拼音（解密），复制粘贴就能到处发，手机电脑都能用
+          <br><br>
+            3. 构成逻辑<br>
+               把中文声母、韵母全部替换成固定字母组合，还自带四声标记；比如 “b” 统一换成 zhy、a 直接写成 a，每个汉字拆成声母 + 韵母再拼接沸语(FyCipher)字符
+          <br><br>
+            4. 附加功能<br>
+               页面会自动保存最近 10 条转换记录，不用重复输入；支持明暗双模式、多款背景切换，看着舒服
+          <br><br>
+            5. 适用场景<br>
+               朋友圈文案、私密留言、小众圈子暗号、日记加密、线上私密对话，不想内容被一眼看懂都能用
+          <br><br>
+            6. 小特点<br>
+               无广告、不用登录、数据只存在你本地浏览器，不会上传你的文字，隐私更安全
+          <br><br>
+             功能：中文 ↔ 沸语(FyCipher)互转、沸语(FyCipher)转拼音；支持历史记录保存
+          <br><br>
+             版本：v4.6 优化版
+          <br><br>
+             作者：夙舊（Q：3231153723）
+          <br><br>
+                                 有问题可联系页面底部作者邮箱😉
+        </div>
+    </div>
+</div>
+<script>
+//新版本必须改，否则公告和提示加载不出来！将V后面的数字改成当前版本（如V4.6版本就改成46）！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！！11
+  const NOTICE_KEY = "fyNoticeV46Opt";
+// 【翻译映射 100%原样未修改】
+const sheng = {
+  "b":"zhy","c":"ku","ch":"kught","d":"da","f":"nu","g":"je","h":"ght",
+  "j":"shb","k":"θao","l":"ev","m":"am","n":"nən","p":"pie","q":"tʃie",
+  "r":"rb","s":"jik","sh":"jikght","t":"tum","v":"vɔ","w":"wuda","x":"xioz",
+  "y":"yə","z":"zu","zh":"zught"
+};
+const yun = {"a":"a","e":"mi","i":"vi","o":"ʌ","u":"ʒm"};
+const tone = {"1":"ˉ","2":"ˊ","3":"ˇ","4":"丶"};
+const shengReverse = {
+  "zhy":"b","ku":"c","kught":"ch","da":"d","nu":"f","je":"g","ght":"h",
+  "shb":"j","θao":"k","ev":"l","am":"m","nən":"n","pie":"p","tʃie":"q",
+  "rb":"r","jik":"s","jikght":"sh","tum":"t","vɔ":"v","wuda":"w","xioz":"x",
+  "yə":"y","zu":"z","zught":"zh"
+};
+const yunReverse = {"a":"a","mi":"e","vi":"i","ʌ":"o","ʒm":"u","je":"g"};
+const toneCharMap = {
+    'ā':'a','á':'a','ǎ':'a','à':'a',
+    'ē':'e','é':'e','ě':'e','è':'e',
+    'ī':'i','í':'i','ǐ':'i','ì':'i',
+    'ō':'o','ó':'o','ǒ':'o','ò':'o',
+    'ū':'u','ú':'u','ǔ':'u','ù':'u',
+    'ǖ':'ü','ǘ':'ü','ǚ':'ü','ǜ':'ü'
+};
+const allowToneEnd = new Set(['g','n','a','o','e','i','ü','u']);
+// 汉语转沸语（转换逻辑完全不变）
+function cnToFy() {
+  const text = document.getElementById("input").value.trim();
+  if (!text) {
+    document.getElementById("output").innerText = "";
+    document.getElementById("output").classList.remove("active");
+    updateWordCount(0);
+    saveLocalInput();
+    return;
+  }
+  const pyAll = pinyinPro.pinyin(text, { type: "all", multiple: false });
+  const resultList = [];
+  pyAll.forEach(item => {
+    if (!item.isZh) return;
+    const rawFinal = item.finalHead + item.finalBody + item.finalTail;
+    const tNum = String(item.num);
+    const toneSym = tone[tNum] || "";
+    const fyS = sheng[item.initial] || item.initial;
+    let pureNoTone = rawFinal.replace(/[āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜ]/g, c => toneCharMap[c]);
+    const lastBaseChar = pureNoTone.slice(-1) || "";
+    const canShowTone = allowToneEnd.has(lastBaseChar);
+    const finalPieces = [];
+    for (const ch of rawFinal) {
+      const baseCh = toneCharMap[ch] || ch;
+      let fyChar;
+      if (yun[baseCh]) fyChar = yun[baseCh];
+      else if (baseCh === "n") fyChar = "nən";
+      else if (baseCh === "g") fyChar = "je";
+      else fyChar = baseCh;
+      finalPieces.push(fyChar);
+    }
+    if (canShowTone && finalPieces.length) {
+      const last = finalPieces.pop();
+      finalPieces.push(toneSym + last);
+    }
+    resultList.push(fyS + finalPieces.join(""));
+  })
+  const res = resultList.join("  ");
+  const outBox = document.getElementById("output");
+  outBox.innerText = res;
+  outBox.classList.remove("active");
+  setTimeout(()=>outBox.classList.add("active"),10);
+  updateWordCount(res.length);
+  addHistory(text, res, "cnToFy");
+  saveLocalInput();
+}
+// 沸语转回拼音（反向规则不变）
+function fyToCn() {
+  const text = document.getElementById("input").value.trim();
+  if (!text) {
+    document.getElementById("output").innerText = "";
+    document.getElementById("output").classList.remove("active");
+    updateWordCount(0);
+    saveLocalInput();
+    return;
+  }
+  const fyTone = {"ˉ":"1","ˊ":"2","ˇ":"3","ˋ":"4","丶":"4"};
+  const syllables = text.split(/\s+/).filter(Boolean);
+  const out = [];
+  for (const syl of syllables) {
+    let toneNum = "";
+    let body = syl;
+    for (const sym in fyTone) {
+      if (body.includes(sym)) {
+        toneNum = fyTone[sym];
+        body = body.replaceAll(sym, "");
+        break;
+      }
+    }
+    let shengPart = "";
+    let rest = body;
+    const sKeys = Object.keys(shengReverse).sort((a,b)=>b.length - a.length);
+    for (const sk of sKeys) {
+      if (body.startsWith(sk)) {
+        shengPart = shengReverse[sk];
+        rest = body.slice(sk.length);
+        break;
+      }
+    }
+    let yunPart = "";
+    const yKeys = Object.keys(yunReverse).sort((a,b)=>b.length - a.length);
+    let pos = 0;
+    while (pos < rest.length) {
+      let hit = false;
+      for (const yk of yKeys) {
+        if (rest.substr(pos, yk.length) === yk) {
+          yunPart += yunReverse[yk];
+          pos += yk.length;
+          hit = true;
+          break;
+        }
+      }
+      if (!hit) yunPart += rest[pos++];
+    }
+    yunPart = yunPart.replaceAll("nən", "n");
+    out.push(shengPart + yunPart + toneNum);
+  }
+  const textOut = out.join(" ");
+  const outBox = document.getElementById("output");
+  outBox.innerText = textOut;
+  outBox.classList.remove("active");
+  setTimeout(()=>outBox.classList.add("active"),10);
+  updateWordCount(text.length);
+  addHistory(text, textOut, "fyToCn");
+}
+// 轻量化本地存储工具（减少频繁读写，优化卡顿）
+let historyCache = [];
+const HIST_KEY = "fyHistoryOpt";
+const INPUT_KEY = "fyInputOpt";
+const BG_KEY = "fyBgIdxOpt";
+function loadStorage() {
+  try {
+    historyCache = JSON.parse(localStorage.getItem(HIST_KEY)) || [];
+  } catch(e) { historyCache = []; }
+  renderHistory();
+}
+function saveLocalInput() {
+  try { localStorage.setItem(INPUT_KEY, document.getElementById("input").value); } catch(e){}
+}
+function updateWordCount(len) {
+  document.getElementById("wordCount").textContent = len;
+}
+function addHistory(raw, res, type) {
+  historyCache = historyCache.filter(h => h.text !== raw);
+  historyCache.unshift({ text: raw, res, type });
+  if (historyCache.length > 10) historyCache.length = 10;
+  try { localStorage.setItem(HIST_KEY, JSON.stringify(historyCache)); } catch(e){}
+  renderHistory();
+}
+function renderHistory() {
+  const wrap = document.getElementById("historyList");
+  if (!historyCache.length) {
+    wrap.innerHTML = '<div style="color:#999;font-size:12px;">暂无历史</div>';
+    return;
+  }
+  let html = "";
+  for (let i=0; i<historyCache.length; i++) {
+    const item = historyCache[i];
+    html += `<div class='history-item' onclick='useHis(${i})'>
+      <span>${item.text}</span>
+      <span class='delete-history-item' onclick='delHis(${i},event)'>🗑️</span>
+    </div>`;
+  }
+  wrap.innerHTML = html;
+}
+function delHis(idx, e) {
+  e.stopPropagation();
+  if (!confirm("删除本条记录😖？")) return;
+  historyCache.splice(idx, 1);
+  try { localStorage.setItem(HIST_KEY, JSON.stringify(historyCache)); }catch(e){}
+  renderHistory();
+}
+function clearAllHis() {
+  if (!confirm("清空全部历史记录😫？")) return;
+  historyCache = [];
+  localStorage.removeItem(HIST_KEY);
+  renderHistory();
+}
+function useHis(idx) {
+  const item = historyCache[idx];
+  document.getElementById("input").value = item.text;
+  item.type === "cnToFy" ? cnToFy() : fyToCn();
+}
+// 背景切换逻辑
+const bgArr = ["--bg","--bg-warm","--bg-green","--bg-gray"];
+function initBg() {
+  let idx = 0;
+  try { idx = Number(localStorage.getItem(BG_KEY)) || 0; }catch(e){}
+  document.body.style.background = `var(${bgArr[idx]})`;
+  window.bgIdx = idx;
+}
+function switchBg() {
+  window.bgIdx = (window.bgIdx + 1) % bgArr.length;
+  document.body.style.background = `var(${bgArr[window.bgIdx]})`;
+  localStorage.setItem(BG_KEY, window.bgIdx);
+}
+// 公告弹窗控制
+function checkNotice() {
+  if (!localStorage.getItem(NOTICE_KEY)) {
+    document.getElementById("noticeMask").classList.remove("hidden");
+  }
+}
+document.getElementById("closeNotice").onclick = ()=>{
+  localStorage.setItem(NOTICE_KEY, "1");
+  document.getElementById("noticeMask").classList.add("hidden");
+};
+// 页面一次性加载绑定
+window.onload = function() {
+  loadStorage();
+  initBg();
+  checkNotice();
+  // 翻译按钮
+  document.getElementById("cnToFyBtn").onclick = cnToFy;
+  document.getElementById("fyToCnBtn").onclick = fyToCn;
+  // 背景切换
+  document.getElementById("bgSwitchBtn").onclick = switchBg;
+  // 明暗切换
+  document.getElementById("darkBtn").onclick = function(){
+    document.body.toggleAttribute("dark");
+    this.textContent = document.body.hasAttribute("dark") ? "☀️ 日间" : "🌙 黑夜";
+  };
+  // 复制按钮：空内容/占位文字直接拦截，不会复制空白提示
+  document.getElementById("copyBtn").onclick = async function(){
+    const outBox = document.getElementById("output");
+    const txt = outBox.innerText.trim();
+    if (!txt || txt === "翻译结果将显示在这里🙃:)") return;
+    await navigator.clipboard.writeText(txt);
+    const tip = document.getElementById("copyTip");
+    tip.classList.add("show");
+    setTimeout(()=>tip.classList.remove("show"),1500);
+  };
+  // 清空输入输出
+  document.getElementById("clearBtn").onclick = function(){
+    document.getElementById("input").value = "";
+    document.getElementById("output").innerText = "";
+    document.getElementById("output").classList.remove("active");
+    updateWordCount(0);
+    saveLocalInput();
+  };
+  document.getElementById("clearAllHistoryBtn").onclick = clearAllHis;
+//=========帮助弹窗、红点、首次引导逻辑=========
+    //获取元素
+    const helpBtn = document.getElementById('helpBtn');
+    const introModal = document.getElementById('introModal');
+    const introCloseBtn = document.getElementById('introCloseBtn');
+    const helpRedDot = document.getElementById("helpRedDot");
+    const introGuideTip = document.getElementById("introGuideTip");
+    const hasReadIntro = localStorage.getItem("hasReadIntro");
+    if(!hasReadIntro){
+        helpRedDot.classList.add("show");
+        introGuideTip.classList.add("show");
+    }else{
+        helpRedDot.classList.remove("show");
+        introGuideTip.classList.remove("show");
+    }
+//打开弹窗
+helpBtn.onclick = function(){
+    introModal.style.display = "flex";
+    localStorage.setItem("hasReadIntro","1");
+    helpRedDot.classList.remove("show");
+    introGuideTip.classList.remove("show");
+};
+//关闭弹窗
+introCloseBtn.onclick = function(){
+    introModal.style.display = "none";
+};
+//点击遮罩背景关闭
+introModal.onclick = function(e){
+    if(e.target === introModal){
+        introModal.style.display = "none";
+    }
+};
+}
+  // 恢复上次输入内容
+try {
+  const lastInput = localStorage.getItem(INPUT_KEY);
+  if(lastInput) document.getElementById("input").value = lastInput;
+}catch(e){}
+function updateWordCount(len){
+  const el = document.getElementById('wordCount');
+  el.textContent = "字数：" + len;
+}
+const textArea = document.getElementById('input');
+textArea.addEventListener('input', function(){
+  updateWordCount(this.value.length);
+});
+updateWordCount(textArea.value.length);
+</script>
+</body>
+</html>
