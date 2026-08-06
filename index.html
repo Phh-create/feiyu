@@ -212,7 +212,7 @@
 <body>
 <div class="mask hidden" id="noticeMask">
   <div class="notice-modal">
-    <div class="notice-title">📢 v4.5网站更新公告（8月6日更新）  美化大版本</div>
+    <div class="notice-title">📢 v4.5网站更新公告（8月6日更新）  优化版本</div>
     <div class="notice-content">
       1. 移除持续循环背景动画，大幅解决手机卡顿问题<br>
       2. 新增4款一键切换背景，明暗模式完整保留<br>
@@ -220,7 +220,7 @@
       4. 修复空输入点复制会复制占位文字bug<br>
       5. 新增背景切换功能<br><br>
          
-     （本次公告仅首次打开弹出，关闭后不再显示🤐！）
+        （本次公告仅首次打开弹出，关闭后不再显示🤐！）
     </div>
     <button class="notice-close" id="closeNotice">我知道了，开始使用😍</button>
   </div>
@@ -266,8 +266,8 @@
     音节结尾为g/n/a/o/e/i/u/ü时，声调放置在**音节最后一个音素的沸译文前方**；所有字母n统一译为nən；四声符号使用丶
   </div>
   <div class="footer">
-    创作者：Pan Honghao<br>
-    邮箱：4397637@qq.com / arenabreakout667@163.com
+    创作者：夙舊（Q：3231153723）<br>
+    邮箱：3231153723@qq.com / arenabreakout667@163.com
   </div>
 </div>
 
@@ -449,13 +449,13 @@ function renderHistory() {
 }
 function delHis(idx, e) {
   e.stopPropagation();
-  if (!confirm("删除本条记录？")) return;
+  if (!confirm("删除本条记录😖？")) return;
   historyCache.splice(idx, 1);
   try { localStorage.setItem(HIST_KEY, JSON.stringify(historyCache)); }catch(e){}
   renderHistory();
 }
 function clearAllHis() {
-  if (!confirm("清空全部历史记录？")) return;
+  if (!confirm("清空全部历史记录😫？")) return;
   historyCache = [];
   localStorage.removeItem(HIST_KEY);
   renderHistory();
